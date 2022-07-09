@@ -34,7 +34,7 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         // coolio bear
         "https://ipfs.io/ipfs/QmTVLyTSuiKGUEmb88BgXG3qNC8YgpHZiFbjHrXKH3QHEu?filename=coolio_bear.json",
         // simple bear
-        "https://ipfs.io/ipfs/QmbKhBXVWmwrYsTPFYfroR2N7NAekAMxHUVg2CWks7i9qj?filename=simple_bear.json",
+        "https://ipfs.io/ipfs/QmbKhBXVWmwrYsTPFYfroR2N7NAekAMxHUVg2CWks7i9qj?filename=simple_bear.json"
     ];
 
     /**
@@ -61,7 +61,8 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         _setTokenURI(tokenId, defaultUri);
 
         console.log(
-            `Token ${tokenId} minted successfully and url assigned: ${defaultUri}`
+            "Token" . tokenId . 
+            " minted successfully and url assigned: " . defaultUri
         );
     }
 
