@@ -37,15 +37,8 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         "https://ipfs.io/ipfs/QmbKhBXVWmwrYsTPFYfroR2N7NAekAMxHUVg2CWks7i9qj?filename=simple_bear.json"
     ];
 
-    /**
-     * @param {string} contract name
-     * @param {string} contract symbol
-     */
     constructor() ERC721("Bull&Bear", "BBTK") {}
 
-    /** 
-     * @param {address} wallet to mint to
-     */
     function safeMint(address to) public {
         // Current counter value will be the minted token's token ID.
         uint256 tokenId = _tokenIdCounter.current();
@@ -61,8 +54,8 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         _setTokenURI(tokenId, defaultUri);
 
         console.log(
-            "Token" . tokenId . 
-            " minted successfully and url assigned: " . defaultUri
+            "Token", tokenId, 
+            " minted successfully and url assigned: ", defaultUri
         );
     }
 
@@ -72,10 +65,10 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         address to,
         uint256 tokenId
     ) internal override(ERC721, ERC721Enumerable) {
-        super._beforeTokenTransfer(from, to, tokenId)
+        super._beforeTokenTransfer(from, to, tokenId);
     }
 
-    function _burn(uint256 tokenId) internal ovverride(ERC721, ERC721Enumerable) {
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);
     }
 
