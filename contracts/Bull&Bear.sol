@@ -18,7 +18,7 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, KeeperCompatibl
 
     Counters.Counter private _tokenIdCounter;
 
-		AggregatorV3Interface public pricefeed;
+		AggregatorV3Interface public priceFeed;
 
 		/**
 		 * Use interval and timestamp to set time schedule execution of Upkeep 
@@ -67,7 +67,7 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, KeeperCompatibl
 		 * `block.timestamp` returns seconds since unix epoch.
 		 */
 		interval = updateInterval;
-		lastTimeStamp = block.timestamp;
+		lastTimestamp = block.timestamp;
 
 		/**
 		 * Takes the `_priceFeed` and pass it to the `AggregatorV3Interface` to get the value to pass in the mock.
@@ -103,13 +103,13 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, KeeperCompatibl
     /**
      * Check if time from the last upkeep update is enough to need another update.
 		 */
-    function checkUpKeep(bytes calldata) external view override returns (bool upkeepNeeded, bytes memory) {
-			upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+    function checkUpkeep(bytes calldata /* checkData */) external view override returns (bool upkeepNeeded, bytes memory /* performData */) {
+			upkeepNeeded = (block.timestamp - lastTimestamp) > interval;
     }
 
-    function performUpkeep(bytes calldata) external override {
-			if ((block.timestamp - lastTimeStamp) > interval){
-				lastTimeStamp = block.timestamp;
+    function performUpkeep(bytes calldata /* performData */) external override {
+			if ((block.timestamp - lastTimestamp) > interval){
+				lastTimestamp = block.timestamp;
 				int latestPrice = getLatestPrice();
 
 				if (latestPrice == currentPrice) {
@@ -145,7 +145,7 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, KeeperCompatibl
 				/* uint startedAt */,
 				/* uint timeStamp */,
 				/* uint80 answeredInRound */
-			) = pricefeed.latestRoundData();
+			) = priceFeed.latestRoundData();
 
 			return price;
     }
