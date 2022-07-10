@@ -12,13 +12,25 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "hardhat/console.sol";
 
-contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
+contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, KeeperCompatibleInterface, Ownable {
 
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
 
-    // My IPFS node urls to json nft files
+		AggregatorV3Interface public pricefeed;
+
+		/**
+		 * Use interval and timestamp to set time schedule execution of Upkeep 
+		 */
+		 uint public interval;
+		 uint public lastTimestamp;
+
+		 int256 public currentPrice;
+
+    /**
+     * My IPFS node urls to json nft files
+		 */
 
     string[] bullUrisIpfs = [
         // gamer bull
@@ -37,8 +49,37 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         "https://ipfs.io/ipfs/QmbKhBXVWmwrYsTPFYfroR2N7NAekAMxHUVg2CWks7i9qj?filename=simple_bear.json"
     ];
 
-    constructor() ERC721("Bull&Bear", "BBTK") {}
+    event TokensUpdated(string marketTrend);
 
+		/**
+		 * Test data:
+		 * `updateInterval` = 10
+		 *	this value is in seconds.
+		 * `_priceFeed` = 0xD753A1c190091368EaC67bbF3Ee5bAEd265aC420
+		 *	this value is the address of the deployed `MockPriceFeed.sol` contract.
+		 * An alternative for _priceFeed value can be the address of BTC/USD price feed contract on Rinkeby: https://rinkeby.etherscan.io/address/0xECe365B379E1dD183B20fc5f022230C044d51404
+		 * `_priceFeed` = 0xECe365B379E1dD183B20fc5f022230C044d51404
+		 */
+    constructor(uint updateInterval, address _priceFeed) ERC721("Bull&Bear", "BBTK") {
+
+		/**
+		 * Set time schedule for the keeper.
+		 * `block.timestamp` returns seconds since unix epoch.
+		 */
+		interval = updateInterval;
+		lastTimeStamp = block.timestamp;
+
+		/**
+		 * Takes the `_priceFeed` and pass it to the `AggregatorV3Interface` to get the value to pass in the mock.
+		 */
+		priceFeed = AggregatorV3Interface(_priceFeed);
+
+		/**
+		 * Set the price for the chosen currency pair.
+		 */
+		currentPrice = getLatestPrice();
+}
+			
     function safeMint(address to) public {
         // Current counter value will be the minted token's token ID.
         uint256 tokenId = _tokenIdCounter.current();
@@ -59,9 +100,91 @@ contract BullBear is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         );
     }
 
-    // The following functions are overrides required by Solidity.
+    /**
+     * Check if time from the last upkeep update is enough to need another update.
+		 */
+    function checkUpKeep(bytes calldata) external view override returns (bool upkeepNeeded, bytes memory) {
+			upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+    }
+
+    function performUpkeep(bytes calldata) external override {
+			if ((block.timestamp - lastTimeStamp) > interval){
+				lastTimeStamp = block.timestamp;
+				int latestPrice = getLatestPrice();
+
+				if (latestPrice == currentPrice) {
+					console.log("No price change. Exiting.");
+					return;
+				}
+
+				/**
+				 * Bear or bull time
+				 */
+				if (latestPrice < currentPrice) {
+					console.log("It's bear time!");
+					updateAllTokenUris("bear");
+				} else {
+					console.log("It's bull time!");
+				}
+
+				currentPrice = latestPrice;
+			} else {
+				console.log("Interval not up yet.");
+				return;
+			}
+    }
+
+    /**
+     * Helpers functions
+     */
+
+    function getLatestPrice() public view returns (int256) {
+			(
+				/* uint80 roundID */,
+				int price,
+				/* uint startedAt */,
+				/* uint timeStamp */,
+				/* uint80 answeredInRound */
+			) = pricefeed.latestRoundData();
+
+			return price;
+    }
+
+    function updateAllTokenUris(string memory trend) internal {
+    	if (compareStrings("bear", trend)) {
+    		console.log("Updating token uris with ", trend, "trend");
+
+    		for (uint i = 0; i < _tokenIdCounter.current(); i++) {
+    			_setTokenURI(i, bearUrisIpfs[0]);
+    		}
+    	} else {
+				console.log("Updating token uris with ", trend, "trend");
+
+				for (uint i = 0; i < _tokenIdCounter.current(); i++) {
+					_setTokenURI(i, bullUrisIpfs[0]);
+				}
+    	}
+
+    	emit TokensUpdated(trend);
+    }
+
+    function setPriceFeed(address newFeed) public onlyOwner {
+			priceFeed = AggregatorV3Interface(newFeed);
+    }
+
+    function setInterval(uint256 newInterval) public onlyOwner {
+			interval = newInterval;
+    }
+
+    function compareStrings(string memory a, string memory b) internal pure returns (bool) {
+			return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
+    }
+
+		/**
+     * The following functions are overrides required by Solidity.
+     */
     function _beforeTokenTransfer(
-        address from,
+       	address from,
         address to,
         uint256 tokenId
     ) internal override(ERC721, ERC721Enumerable) {
